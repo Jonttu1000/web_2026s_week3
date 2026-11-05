@@ -13,3 +13,6 @@ uploads/*
 #except for .gitkeep file
 !uploads/.gitkeep
 
+public/cat.jpg
+public/testikissa.jpg
+
