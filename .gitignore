@@ -2,3 +2,8 @@
 .idea
 node_modules
 .DS_Store
+
+#Enviroment variables
+.env
+.env.*
+!.env.example
