@@ -7,3 +7,9 @@ node_modules
 .env
 .env.*
 !.env.example
+
+#Ignore content of uploads folder
+uploads/*
+#except for .gitkeep file
+!uploads/.gitkeep
+
