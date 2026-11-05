@@ -49,3 +49,33 @@ PUT http://localhost:3000/api/v1/users/9592
 
 ### Poista käyttäjä (vain testivastaus)
 DELETE http://localhost:3000/api/v1/users/992
+
+
+
+
+### File upload test
+POST http://localhost:3000/api/v1/cats
+Content-Type: multipart/form-data; boundary=MyBoundary
+
+--MyBoundary
+Content-Disposition: form-data; name="cat_name"
+
+Misu
+--MyBoundary
+Content-Disposition: form-data; name="weight"
+
+4.5
+--MyBoundary
+Content-Disposition: form-data; name="owner"
+
+3609
+--MyBoundary
+Content-Disposition: form-data; name="birthdate"
+
+2023-06-15
+--MyBoundary
+Content-Disposition: form-data; name="cat"; filename="cat.jpg"
+Content-Type: image/jpeg
+
+< ./public/testikissa.jpg
+--MyBoundary--
