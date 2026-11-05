@@ -1,0 +1,51 @@
+
+### Hae kaikki kissat
+GET http://localhost:3000/api/v1/cats
+
+### Hae kissa tunnisteella
+GET http://localhost:3000/api/v1/cats/9592
+
+### Lisää uusi kissa
+POST http://localhost:3000/api/v1/cats
+Content-Type: application/json
+
+{
+  "cat_name": "Misu",
+  "weight": 4.5,
+  "owner": 2609,
+  "filename": "misu.jpg",
+  "birthdate": "2023-06-15"
+}
+
+
+### Päivitä kissa (vain testivastaus)
+PUT http://localhost:3000/api/v1/cats/9592
+
+### Poista kissa (vain testivastaus)
+DELETE http://localhost:3000/api/v1/cats/9592
+
+
+
+### Hae kaikki käyttäjät
+GET http://localhost:3000/api/v1/users
+
+### Hae käyttäjä tunnisteella
+GET http://localhost:3000/api/v1/users/3614
+
+### Lisää uusi käyttäjä
+POST http://localhost:3000/api/v1/users
+Content-Type: application/json
+
+{
+  "username": "Matti123",
+  "email": "matti@example.com",
+  "role": "user",
+  "password": "tosiSalainen123",
+  "name": "Matti Meikäläinen"
+}
+
+### Päivitä käyttäjä (vain testivastaus)
+PUT http://localhost:3000/api/v1/users/9592
+
+### Poista käyttäjä (vain testivastaus)
+DELETE http://localhost:3000/api/v1/users/992
