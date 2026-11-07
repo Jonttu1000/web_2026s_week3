@@ -1,53 +1,106 @@
-const userItems = [
-  {
-    user_id: 3609,
-    name: 'John Doe',
-    username: 'johndoe',
-    email: 'john@metropolia.fi',
-    role: 'user',
-    password: 'password',
-  },
-  {
-    user_id: 3610,
-    name: 'Jane Smith',
-    username: 'janesmith',
-    email: 'jane.smith@metropolia.fi',
-    role: 'admin',
-    password: 'securepassword123',
-  },
-  {
-    user_id: 3611,
-    name: 'Matti Meikäläinen',
-    username: 'mattimeikäläinen',
-    email: 'matti.meikalainen@metropolia.fi',
-    role: 'user',
-    password: 'salasana2026',
-  },
-];
+import promisePool from '../../utils/database.js';
 
-const listAllUsers = () => {
-  return userItems;
+const listAllUsers = async () => {
+  const [rows] = await promisePool.execute(`SELECT * FROM wsk_users`);
+
+  return rows;
 };
 
-const findUserById = (userId) => {
-  return userItems.find((user) => user.user_id === Number(userId));
+const findUserById = async (id) => {
+  const [rows] = await promisePool.execute(
+    `SELECT * FROM wsk_users WHERE user_id = ?`,
+    [id]
+  );
+
+  return rows[0] || null;
 };
 
-const addUser = (user) => {
+const addUser = async (user) => {
   const {name, username, email, role, password} = user;
+  const [result] = await promisePool.execute(
+    'INSERT INTO wsk_users (name, username, email, password, role) VALUES (?, ?, ?, ?, ?)',
+    [name, username, email, password, role]
+  );
 
-  const newId = Math.max(0, ...userItems.map((item) => item.user_id)) + 1;
-  const newUser = {
-    user_id: newId,
-    name,
-    username,
-    email,
-    role,
-    password,
-  };
-  userItems.push(newUser);
+  if (result.affectedRows === 0) {
+    throw new Error('Failed to add user');
+  }
 
-  return {user_id: newId};
+  return {user_id: result.insertId};
 };
 
-export {listAllUsers, findUserById, addUser};
+const modifyUser = async (user, id) => {
+  const allowedFields = ['name', 'username', 'email', 'password', 'role'];
+
+  const updates = [];
+  const values = [];
+
+  for (const field of allowedFields) {
+    if (Object.hasOwn(user, field)) {
+      updates.push(`${field} = ?`);
+      values.push(user[field]);
+    }
+  }
+
+  if (updates.length === 0) {
+    return null;
+  }
+
+  const [existingUsers] = await promisePool.execute(
+    'SELECT user_id FROM wsk_users WHERE user_id = ?',
+    [id]
+  );
+
+  if (existingUsers.length === 0) {
+    return false;
+  }
+
+  values.push(id);
+
+  const sql = `UPDATE wsk_users SET ${updates.join(', ')} WHERE user_id = ?`;
+
+  await promisePool.execute(sql, values);
+
+  return {message: 'success'};
+};
+
+const removeUser = async (id) => {
+  const connection = await promisePool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [users] = await connection.execute(
+      'SELECT user_id FROM wsk_users WHERE user_id = ?',
+      [id]
+    );
+    if (users.length === 0) {
+      await connection.rollback();
+      return false;
+    }
+
+    await connection.execute('DELETE FROM wsk_cats WHERE owner = ?', [id]);
+    const [result] = await connection.execute(
+      'DELETE FROM wsk_users WHERE user_id = ?',
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error('Failed to remove user');
+    }
+
+    await connection.commit();
+    return {message: 'success'};
+  } catch (error) {
+    try {
+      await connection.rollback();
+    } catch (rollbackError) {
+      error.rollbackError = rollbackError;
+    }
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
+export {listAllUsers, findUserById, addUser, modifyUser, removeUser};

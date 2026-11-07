@@ -14,5 +14,6 @@ uploads/*
 !uploads/.gitkeep
 
 
-public/testikissa.jpg
+public/*
+!public/cat.jpg
 

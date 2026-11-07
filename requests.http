@@ -1,54 +1,56 @@
 
-### Hae kaikki kissat
-GET http://localhost:3000/api/v1/cats
-
-### Hae kissa tunnisteella
-GET http://localhost:3000/api/v1/cats/9592
-
-### Lisää uusi kissa
-POST http://localhost:3000/api/v1/cats
-Content-Type: application/json
-
-{
-  "cat_name": "Misu",
-  "weight": 4.5,
-  "owner": 2609,
-  "filename": "misu.jpg",
-  "birthdate": "2023-06-15"
-}
+### Poista käyttäjä
+DELETE http://localhost:3000/api/v1/users/37
 
 
-### Päivitä kissa (vain testivastaus)
-PUT http://localhost:3000/api/v1/cats/9592
-
-### Poista kissa (vain testivastaus)
-DELETE http://localhost:3000/api/v1/cats/9592
-
-
-
-### Hae kaikki käyttäjät
-GET http://localhost:3000/api/v1/users
-
-### Hae käyttäjä tunnisteella
-GET http://localhost:3000/api/v1/users/3614
-
-### Lisää uusi käyttäjä
+### Assignment 5 - transaktio- ja omistajuustesti
+### 1. Luo testikäyttäjä ja kopioi user_id POST-vastauksesta.
 POST http://localhost:3000/api/v1/users
 Content-Type: application/json
 
 {
-  "username": "Matti123",
-  "email": "matti@example.com",
-  "role": "user",
-  "password": "tosiSalainen123",
-  "name": "Matti Meikäläinen"
+  "name": "Matti Mäkinen",
+  "username": "matti555",
+  "email": "matti@example.test",
+  "password": "salasana",
+  "role": "user"
 }
 
-### Päivitä käyttäjä (vain testivastaus)
-PUT http://localhost:3000/api/v1/users/9592
+### 2. Lisää kissalle edellisen pyynnön user_id owner-kenttään.
+POST http://localhost:3000/api/v1/cats
+Content-Type: multipart/form-data; boundary=MyBoundary
 
-### Poista käyttäjä (vain testivastaus)
-DELETE http://localhost:3000/api/v1/users/992
+--MyBoundary
+Content-Disposition: form-data; name="cat_name"
+
+Karvinen
+--MyBoundary
+Content-Disposition: form-data; name="weight"
+
+4.5
+--MyBoundary
+Content-Disposition: form-data; name="owner"
+
+39
+--MyBoundary
+Content-Disposition: form-data; name="birthdate"
+
+2023-06-15
+--MyBoundary
+Content-Disposition: form-data; name="cat"; filename="cat.jpg"
+Content-Type: image/jpeg
+
+< ./public/cat.jpg
+--MyBoundary--
+
+### 3. Tarkista käyttäjän kissat.
+GET http://localhost:3000/api/v1/cats/user/38
+
+### 4. Poista sama testikäyttäjä; tämä poistaa myös hänen kissansa transaktiossa.
+DELETE http://localhost:3000/api/v1/users/38
+
+### 5. Tarkista, että käyttäjän kissat ovat poistuneet (odotettu vastaus: []).
+GET http://localhost:3000/api/v1/cats/user/38
 
 
 
@@ -68,7 +70,7 @@ Content-Disposition: form-data; name="weight"
 --MyBoundary
 Content-Disposition: form-data; name="owner"
 
-3609
+39
 --MyBoundary
 Content-Disposition: form-data; name="birthdate"
 

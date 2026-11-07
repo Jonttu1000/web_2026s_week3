@@ -1,11 +1,18 @@
-import {addCat, findCatById, listAllCats} from '../models/cat-model.js';
+import {
+  addCat,
+  findCatById,
+  listAllCats,
+  listCatsByUserId,
+} from '../models/cat-model.js';
 
-const getCat = (req, res) => {
-  res.json(listAllCats());
+
+const getCat = async (req, res) => {
+  const cats = await listAllCats();
+  res.json(cats);
 };
 
-const getCatById = (req, res) => {
-  const cat = findCatById(req.params.id);
+const getCatById = async (req, res) => {
+  const cat = await findCatById(req.params.id);
   if (cat) {
     res.json(cat);
   } else {
@@ -13,11 +20,16 @@ const getCatById = (req, res) => {
   }
 };
 
-const postCat = (req, res) => {
+const getCatsByUserId = async (req, res) => {
+  const cats = await listCatsByUserId(req.params.id);
+  res.json(cats);
+};
+
+const postCat = async (req, res) => {
   console.log('Request body:', req.body);
   console.log('Request file:', req.file);
 
-  const result = addCat({...req.body, filename: req.file?.filename});
+  const result = await addCat({...req.body, filename: req.file?.filename});
 
   if (result.cat_id) {
     res.status(201).json({
@@ -37,4 +49,11 @@ const deleteCat = (req, res) => {
   res.json({message: 'Cat item deleted, id: ' + req.params.id});
 };
 
-export {getCat, getCatById, postCat, putCat, deleteCat};
+export {
+  getCat,
+  getCatById,
+  getCatsByUserId,
+  postCat,
+  putCat,
+  deleteCat,
+};
