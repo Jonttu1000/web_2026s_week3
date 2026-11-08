@@ -3,8 +3,9 @@ import {
   findCatById,
   listAllCats,
   listCatsByUserId,
+  modifyCat,
+  removeCat,
 } from '../models/cat-model.js';
-
 
 const getCat = async (req, res) => {
   const cats = await listAllCats();
@@ -26,10 +27,15 @@ const getCatsByUserId = async (req, res) => {
 };
 
 const postCat = async (req, res) => {
-  console.log('Request body:', req.body);
-  console.log('Request file:', req.file);
+  if (!req.file) {
+    return res.status(400).json({error: 'Cat image is required'});
+  }
 
-  const result = await addCat({...req.body, filename: req.file?.filename});
+  const result = await addCat({
+    ...req.body,
+    owner: res.locals.user.user_id,
+    filename: req.file?.filename,
+  });
 
   if (result.cat_id) {
     res.status(201).json({
@@ -41,19 +47,44 @@ const postCat = async (req, res) => {
   }
 };
 
-const putCat = (req, res) => {
-  res.json({message: 'Cat item updated, id: ' + req.params.id});
+const putCat = async (req, res) => {
+  try {
+    const result = await modifyCat(
+      req.body || {},
+      req.params.id,
+      res.locals.user
+    );
+
+    if (result === null) {
+      return res.status(400).json({error: 'No valid fields to update'});
+    }
+
+    if (result === false) {
+      const status = res.locals.user.role === 'admin' ? 404 : 403;
+      return res.status(status).json({error: 'Cat not found or access denied'});
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({error: 'Failed to update cat'});
+  }
 };
 
-const deleteCat = (req, res) => {
-  res.json({message: 'Cat item deleted, id: ' + req.params.id});
+const deleteCat = async (req, res) => {
+  try {
+    const result = await removeCat(req.params.id, res.locals.user);
+
+    if (!result) {
+      const status = res.locals.user.role === 'admin' ? 404 : 403;
+      return res.status(status).json({error: 'Cat not found or access denied'});
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({error: 'Failed to delete cat'});
+  }
 };
 
-export {
-  getCat,
-  getCatById,
-  getCatsByUserId,
-  postCat,
-  putCat,
-  deleteCat,
-};
+export {getCat, getCatById, getCatsByUserId, postCat, putCat, deleteCat};

@@ -1,3 +1,5 @@
+import bcrypt from 'bcrypt';
+
 import {
   listAllUsers,
   findUserById,
@@ -30,13 +32,18 @@ const getUserById = async (req, res) => {
 const postUser = async (req, res) => {
   try {
     const body = req.body || {};
-    const {name, username, email, password, role} = body;
-    if (!name || !username || !email || !password || !role) {
+    const {name, username, email, password} = body;
+    if (!name || !username || !email || !password) {
       res.status(400).json({error: 'Required user fields are missing'});
       return;
     }
 
-    const result = await addUser(body);
+    const result = await addUser({
+      ...body,
+      password: await bcrypt.hash(password, 10),
+      role: 'user',
+    });
+
     res.status(201).json({
       message: 'New user added.',
       result,
@@ -51,8 +58,24 @@ const postUser = async (req, res) => {
 };
 
 const putUser = async (req, res) => {
+  const currentUser = res.locals.user;
+  const userId = Number(req.params.id);
+
+  if (currentUser.role !== 'admin' && currentUser.user_id !== userId) {
+    res.sendStatus(403);
+    return;
+  }
+
   try {
-    const result = await modifyUser(req.body || {}, req.params.id);
+    const updateData = {...(req.body || {})};
+    if (currentUser.role !== 'admin') {
+      delete updateData.role;
+    }
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+
+    const result = await modifyUser(updateData, userId);
     if (result === false) {
       res.status(404).json({error: 'User not found'});
     } else if (result === null) {
@@ -70,8 +93,16 @@ const putUser = async (req, res) => {
 };
 
 const deleteUser = async (req, res) => {
+  const currentUser = res.locals.user;
+  const userId = Number(req.params.id);
+
+  if (currentUser.role !== 'admin' && currentUser.user_id !== userId) {
+    res.sendStatus(403);
+    return;
+  }
+
   try {
-    const result = await removeUser(req.params.id);
+    const result = await removeUser(userId);
     if (result) {
       res.status(200).json(result);
     } else {

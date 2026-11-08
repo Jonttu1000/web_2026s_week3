@@ -1,83 +1,204 @@
+@baseUrl = http://localhost:3000/api/v1
 
-### Poista käyttäjä
-DELETE http://localhost:3000/api/v1/users/37
-
-
-### Assignment 5 - transaktio- ja omistajuustesti
-### 1. Luo testikäyttäjä ja kopioi user_id POST-vastauksesta.
-POST http://localhost:3000/api/v1/users
+### Register regular user A
+# @name registerA
+POST {{baseUrl}}/users
 Content-Type: application/json
 
 {
-  "name": "Matti Mäkinen",
-  "username": "matti555",
-  "email": "matti@example.test",
-  "password": "salasana",
+  "name": "Assignment 6 User A",
+  "username": "assignment6_user_a",
+  "email": "assignment6.user.a@example.test",
+  "password": "Assignment6UserA!",
   "role": "user"
 }
 
-### 2. Lisää kissalle edellisen pyynnön user_id owner-kenttään.
-POST http://localhost:3000/api/v1/cats
-Content-Type: multipart/form-data; boundary=MyBoundary
+### Register regular user B
+# @name registerB
+POST {{baseUrl}}/users
+Content-Type: application/json
 
---MyBoundary
+{
+  "name": "Assignment 6 User B",
+  "username": "assignment6_user_b",
+  "email": "assignment6.user.b@example.test",
+  "password": "Assignment6UserB!",
+  "role": "user"
+}
+
+### Login regular user A
+# @name loginA
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "assignment6_user_a",
+  "password": "Assignment6UserA!"
+}
+
+### Login regular user B
+# @name loginB
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "assignment6_user_b",
+  "password": "Assignment6UserB!"
+}
+
+### Login an existing admin account
+# @name loginAdmin
+# Set the username and password below to a non-personal admin account in the local database.
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "assignment6_admin",
+  "password": "AdminPassword123!"
+}
+
+### Incorrect password (expected 401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "assignment6_user_a",
+  "password": "IncorrectPassword!"
+}
+
+### /auth/me without a token (expected 401)
+GET {{baseUrl}}/auth/me
+
+### /auth/me with User A's token (expected 200)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{loginA.response.body.token}}
+
+### Create a cat owned automatically by User A (expected 201)
+# @name createCatA
+POST {{baseUrl}}/cats
+Authorization: Bearer {{loginA.response.body.token}}
+Content-Type: multipart/form-data; boundary=Assignment6CatA
+
+--Assignment6CatA
 Content-Disposition: form-data; name="cat_name"
 
-Karvinen
---MyBoundary
+Assignment 6 Cat A
+--Assignment6CatA
 Content-Disposition: form-data; name="weight"
 
 4.5
---MyBoundary
-Content-Disposition: form-data; name="owner"
-
-39
---MyBoundary
+--Assignment6CatA
 Content-Disposition: form-data; name="birthdate"
 
-2023-06-15
---MyBoundary
+2022-05-10
+--Assignment6CatA
 Content-Disposition: form-data; name="cat"; filename="cat.jpg"
 Content-Type: image/jpeg
 
 < ./public/cat.jpg
---MyBoundary--
+--Assignment6CatA--
 
-### 3. Tarkista käyttäjän kissat.
-GET http://localhost:3000/api/v1/cats/user/38
+### Create a cat owned automatically by User B (expected 201)
+# @name createCatB
+POST {{baseUrl}}/cats
+Authorization: Bearer {{loginB.response.body.token}}
+Content-Type: multipart/form-data; boundary=Assignment6CatB
 
-### 4. Poista sama testikäyttäjä; tämä poistaa myös hänen kissansa transaktiossa.
-DELETE http://localhost:3000/api/v1/users/38
-
-### 5. Tarkista, että käyttäjän kissat ovat poistuneet (odotettu vastaus: []).
-GET http://localhost:3000/api/v1/cats/user/38
-
-
-
-
-### File upload test
-POST http://localhost:3000/api/v1/cats
-Content-Type: multipart/form-data; boundary=MyBoundary
-
---MyBoundary
+--Assignment6CatB
 Content-Disposition: form-data; name="cat_name"
 
-Misu
---MyBoundary
+Assignment 6 Cat B
+--Assignment6CatB
 Content-Disposition: form-data; name="weight"
 
-4.5
---MyBoundary
-Content-Disposition: form-data; name="owner"
-
-39
---MyBoundary
+5.2
+--Assignment6CatB
 Content-Disposition: form-data; name="birthdate"
 
-2023-06-15
---MyBoundary
+2021-08-15
+--Assignment6CatB
 Content-Disposition: form-data; name="cat"; filename="cat.jpg"
 Content-Type: image/jpeg
 
 < ./public/cat.jpg
---MyBoundary--
+--Assignment6CatB--
+
+### User A updates own cat (expected 200)
+PUT {{baseUrl}}/cats/{{createCatA.response.body.result.cat_id}}
+Authorization: Bearer {{loginA.response.body.token}}
+Content-Type: application/json
+
+{
+  "cat_name": "Assignment 6 Cat A Updated",
+  "weight": 6
+}
+
+### User B tries to update User A's cat (expected 403)
+PUT {{baseUrl}}/cats/{{createCatA.response.body.result.cat_id}}
+Authorization: Bearer {{loginB.response.body.token}}
+Content-Type: application/json
+
+{
+  "cat_name": "Unauthorized Cat Change"
+}
+
+### User B tries to delete User A's cat (expected 403)
+DELETE {{baseUrl}}/cats/{{createCatA.response.body.result.cat_id}}
+Authorization: Bearer {{loginB.response.body.token}}
+
+### User B updates own cat (expected 200)
+PUT {{baseUrl}}/cats/{{createCatB.response.body.result.cat_id}}
+Authorization: Bearer {{loginB.response.body.token}}
+Content-Type: application/json
+
+{
+  "cat_name": "Assignment 6 Cat B Updated"
+}
+
+### Admin updates User B's cat (expected 200)
+PUT {{baseUrl}}/cats/{{createCatB.response.body.result.cat_id}}
+Authorization: Bearer {{loginAdmin.response.body.token}}
+Content-Type: application/json
+
+{
+  "cat_name": "Assignment 6 Cat B Admin Updated"
+}
+
+### Admin deletes User B's cat (expected 200)
+DELETE {{baseUrl}}/cats/{{createCatB.response.body.result.cat_id}}
+Authorization: Bearer {{loginAdmin.response.body.token}}
+
+### User A deletes own cat (expected 200)
+DELETE {{baseUrl}}/cats/{{createCatA.response.body.result.cat_id}}
+Authorization: Bearer {{loginA.response.body.token}}
+
+### User B tries to update User A's information (expected 403)
+PUT {{baseUrl}}/users/{{registerA.response.body.result.user_id}}
+Authorization: Bearer {{loginB.response.body.token}}
+Content-Type: application/json
+
+{
+  "name": "Unauthorized User Change"
+}
+
+### User B tries to delete User A's account (expected 403)
+DELETE {{baseUrl}}/users/{{registerA.response.body.result.user_id}}
+Authorization: Bearer {{loginB.response.body.token}}
+
+### User A updates own information (expected 200)
+PUT {{baseUrl}}/users/{{registerA.response.body.result.user_id}}
+Authorization: Bearer {{loginA.response.body.token}}
+Content-Type: application/json
+
+{
+  "name": "Assignment 6 User A Updated",
+  "password": "Assignment6UserAUpdated!"
+}
+
+### Admin deletes User A's account and its cats (expected 200)
+DELETE {{baseUrl}}/users/{{registerA.response.body.result.user_id}}
+Authorization: Bearer {{loginAdmin.response.body.token}}
+
+### User B deletes own account (expected 200)
+DELETE {{baseUrl}}/users/{{registerB.response.body.result.user_id}}
+Authorization: Bearer {{loginB.response.body.token}}
