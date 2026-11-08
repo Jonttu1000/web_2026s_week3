@@ -7,7 +7,7 @@ Content-Type: application/json
 
 {
   "name": "Assignment 6 User A",
-  "username": "assignment6_user_a",
+  "username": "assignment6usera",
   "email": "assignment6.user.a@example.test",
   "password": "Assignment6UserA!",
   "role": "user"
@@ -20,7 +20,7 @@ Content-Type: application/json
 
 {
   "name": "Assignment 6 User B",
-  "username": "assignment6_user_b",
+  "username": "assignment6userb",
   "email": "assignment6.user.b@example.test",
   "password": "Assignment6UserB!",
   "role": "user"
@@ -32,7 +32,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "username": "assignment6_user_a",
+  "username": "assignment6usera",
   "password": "Assignment6UserA!"
 }
 
@@ -42,7 +42,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "username": "assignment6_user_b",
+  "username": "assignment6userb",
   "password": "Assignment6UserB!"
 }
 
@@ -202,3 +202,213 @@ Authorization: Bearer {{loginAdmin.response.body.token}}
 ### User B deletes own account (expected 200)
 DELETE {{baseUrl}}/users/{{registerB.response.body.result.user_id}}
 Authorization: Bearer {{loginB.response.body.token}}
+
+### Assignment 7: Empty registration (expected 400)
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{}
+
+### Assignment 7: Invalid email (expected 400)
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{"name":"Invalid Email User","username":"invalidemail","email":"not-an-email","password":"ValidPassword123"}
+
+### Assignment 7: Username shorter than 3 characters (expected 400)
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{"name":"Short Username User","username":"ab","email":"short.username@example.test","password":"ValidPassword123"}
+
+### Assignment 7: Password shorter than 8 characters (expected 400)
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{"name":"Short Password User","username":"shortpassword","email":"short.password@example.test","password":"short"}
+
+### Assignment 7: Valid registration (expected 201)
+# @name registerAssignment7
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{"name":"Assignment 7 User","username":"assignment7user","email":"assignment7.user@example.test","password":"Assignment7Password"}
+
+### Assignment 7: Invalid user update (expected 400)
+PUT {{baseUrl}}/users/{{registerAssignment7.response.body.result.user_id}}
+Authorization: ******
+Content-Type: application/json
+
+{"email":"not-an-email"}
+
+### Assignment 7: Empty cat POST (expected 400)
+POST {{baseUrl}}/cats
+Authorization: ******
+Content-Type: multipart/form-data; boundary=Assignment7EmptyCat
+
+--Assignment7EmptyCat--
+
+### Assignment 7: Missing file (expected 400)
+POST {{baseUrl}}/cats
+Authorization: ******
+Content-Type: multipart/form-data; boundary=Assignment7MissingFile
+
+--Assignment7MissingFile
+Content-Disposition: form-data; name="cat_name"
+
+Assignment 7 Missing File
+--Assignment7MissingFile
+Content-Disposition: form-data; name="weight"
+
+4.5
+--Assignment7MissingFile
+Content-Disposition: form-data; name="birthdate"
+
+2022-05-10
+--Assignment7MissingFile--
+
+### Assignment 7: Invalid cat name (expected 400)
+POST {{baseUrl}}/cats
+Authorization: ******
+Content-Type: multipart/form-data; boundary=Assignment7InvalidName
+
+--Assignment7InvalidName
+Content-Disposition: form-data; name="cat_name"
+
+ab
+--Assignment7InvalidName
+Content-Disposition: form-data; name="weight"
+
+4.5
+--Assignment7InvalidName
+Content-Disposition: form-data; name="birthdate"
+
+2022-05-10
+--Assignment7InvalidName
+Content-Disposition: form-data; name="cat"; filename="cat.jpg"
+Content-Type: image/jpeg
+
+< ./public/cat.jpg
+--Assignment7InvalidName--
+
+### Assignment 7: Invalid weight (expected 400)
+POST {{baseUrl}}/cats
+Authorization: ******
+Content-Type: multipart/form-data; boundary=Assignment7InvalidWeight
+
+--Assignment7InvalidWeight
+Content-Disposition: form-data; name="cat_name"
+
+Assignment 7 Cat
+--Assignment7InvalidWeight
+Content-Disposition: form-data; name="weight"
+
+-1
+--Assignment7InvalidWeight
+Content-Disposition: form-data; name="birthdate"
+
+2022-05-10
+--Assignment7InvalidWeight
+Content-Disposition: form-data; name="cat"; filename="cat.jpg"
+Content-Type: image/jpeg
+
+< ./public/cat.jpg
+--Assignment7InvalidWeight--
+
+### Assignment 7: Invalid birthdate (expected 400)
+POST {{baseUrl}}/cats
+Authorization: ******
+Content-Type: multipart/form-data; boundary=Assignment7InvalidBirthdate
+
+--Assignment7InvalidBirthdate
+Content-Disposition: form-data; name="cat_name"
+
+Assignment 7 Cat
+--Assignment7InvalidBirthdate
+Content-Disposition: form-data; name="weight"
+
+4.5
+--Assignment7InvalidBirthdate
+Content-Disposition: form-data; name="birthdate"
+
+not-a-date
+--Assignment7InvalidBirthdate
+Content-Disposition: form-data; name="cat"; filename="cat.jpg"
+Content-Type: image/jpeg
+
+< ./public/cat.jpg
+--Assignment7InvalidBirthdate--
+
+### Assignment 7: Text file upload (expected 400)
+POST {{baseUrl}}/cats
+Authorization: ******
+Content-Type: multipart/form-data; boundary=Assignment7TextFile
+
+--Assignment7TextFile
+Content-Disposition: form-data; name="cat_name"
+
+Assignment 7 Text File
+--Assignment7TextFile
+Content-Disposition: form-data; name="weight"
+
+4.5
+--Assignment7TextFile
+Content-Disposition: form-data; name="birthdate"
+
+2022-05-10
+--Assignment7TextFile
+Content-Disposition: form-data; name="cat"; filename="example.html"
+Content-Type: text/html
+
+< ./example.html
+--Assignment7TextFile--
+
+### Assignment 7: File larger than 10 MB (expected 400)
+# Create ./public/over-10mb.bin locally before running this request.
+POST {{baseUrl}}/cats
+Authorization: ******
+Content-Type: multipart/form-data; boundary=Assignment7LargeFile
+
+--Assignment7LargeFile
+Content-Disposition: form-data; name="cat_name"
+
+Assignment 7 Large File
+--Assignment7LargeFile
+Content-Disposition: form-data; name="weight"
+
+4.5
+--Assignment7LargeFile
+Content-Disposition: form-data; name="birthdate"
+
+2022-05-10
+--Assignment7LargeFile
+Content-Disposition: form-data; name="cat"; filename="over-10mb.bin"
+Content-Type: image/jpeg
+
+< ./public/over-10mb.bin
+--Assignment7LargeFile--
+
+### Assignment 7: Valid cat upload (expected 201)
+# @name createAssignment7Cat
+POST {{baseUrl}}/cats
+Authorization: ******
+Content-Type: multipart/form-data; boundary=Assignment7ValidCat
+
+--Assignment7ValidCat
+Content-Disposition: form-data; name="cat_name"
+
+Assignment 7 Valid Cat
+--Assignment7ValidCat
+Content-Disposition: form-data; name="weight"
+
+4.5
+--Assignment7ValidCat
+Content-Disposition: form-data; name="birthdate"
+
+2022-05-10
+--Assignment7ValidCat
+Content-Disposition: form-data; name="cat"; filename="cat.jpg"
+Content-Type: image/jpeg
+
+< ./public/cat.jpg
+--Assignment7ValidCat--

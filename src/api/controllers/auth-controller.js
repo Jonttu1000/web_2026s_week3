@@ -6,24 +6,30 @@ import 'dotenv/config';
 
 import {findUserByUsername} from '../models/user-model.js';
 
-const postLogin = async (req, res) => {
+const postLogin = async (req, res, next) => {
   try {
     const {username, password} = req.body || {};
 
     if (!username || !password) {
-      return res.status(400).json({error: 'Username and password required'});
+      const error = new Error('Username and password required');
+      error.status = 400;
+      return next(error);
     }
 
     const user = await findUserByUsername(username);
 
     if (!user) {
-      return res.sendStatus(401);
+      const error = new Error('Invalid username or password');
+      error.status = 401;
+      return next(error);
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
-      return res.sendStatus(401);
+      const error = new Error('Invalid username or password');
+      error.status = 401;
+      return next(error);
     }
 
     // Create user object without password
@@ -46,19 +52,21 @@ const postLogin = async (req, res) => {
       user: userWithNoPassword,
       token,
     });
-  } catch {
-    res.sendStatus(500);
+  } catch (error) {
+    next(error);
   }
 };
 
-const getMe = (req, res) => {
+const getMe = (req, res, next) => {
   if (res.locals.user) {
     res.json({
       message: 'token ok',
       user: res.locals.user,
     });
   } else {
-    res.sendStatus(401);
+    const error = new Error('Unauthenticated');
+    error.status = 401;
+    next(error);
   }
 };
 

@@ -13,7 +13,23 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({storage});
+const upload = multer({
+  storage,
+  limits: {fileSize: 10 * 1024 * 1024},
+  fileFilter: (req, file, cb) => {
+    if (
+      file.mimetype.startsWith('image/') ||
+      file.mimetype.startsWith('video/')
+    ) {
+      cb(null, true);
+      return;
+    } else {
+      const error = new Error('Only image and video files are allowed');
+      error.status = 400;
+      cb(error);
+    }
+  },
+});
 
 /**
  * Creates a thumbnail for the uploaded image.
@@ -28,18 +44,26 @@ const createThumbnail = async (req, res, next) => {
     return;
   }
 
+  if (req.file.mimetype.startsWith('video/')) {
+    next();
+    return;
+  }
+
   const parsedPath = path.parse(req.file.path);
   const thumbnailPath = path.join(
     parsedPath.dir,
     `${parsedPath.name}_thumb.png`
   );
 
-  await sharp(req.file.path)
-    .resize(160, 160, {fit: 'cover'})
-    .png()
-    .toFile(thumbnailPath);
-
-  next();
+  try {
+    await sharp(req.file.path)
+      .resize(160, 160, {fit: 'cover'})
+      .png()
+      .toFile(thumbnailPath);
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
 
 export {createThumbnail, upload};

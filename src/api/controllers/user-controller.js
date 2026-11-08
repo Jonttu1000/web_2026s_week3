@@ -8,39 +8,34 @@ import {
   removeUser,
 } from '../models/user-model.js';
 
-const getUser = async (req, res) => {
+const getUser = async (req, res, next) => {
   try {
     res.json(await listAllUsers());
-  } catch {
-    res.status(500).json({error: 'Failed to fetch users'});
+  } catch (error) {
+    next(error);
   }
 };
 
-const getUserById = async (req, res) => {
+const getUserById = async (req, res, next) => {
   try {
     const user = await findUserById(req.params.id);
     if (user) {
       res.json(user);
     } else {
-      res.status(404).json({error: 'User not found'});
+      const error = new Error('User not found');
+      error.status = 404;
+      next(error);
     }
-  } catch {
-    res.status(500).json({error: 'Failed to fetch user'});
+  } catch (error) {
+    next(error);
   }
 };
 
-const postUser = async (req, res) => {
+const postUser = async (req, res, next) => {
   try {
-    const body = req.body || {};
-    const {name, username, email, password} = body;
-    if (!name || !username || !email || !password) {
-      res.status(400).json({error: 'Required user fields are missing'});
-      return;
-    }
-
     const result = await addUser({
-      ...body,
-      password: await bcrypt.hash(password, 10),
+      ...req.body,
+      password: await bcrypt.hash(req.body.password, 10),
       role: 'user',
     });
 
@@ -50,19 +45,23 @@ const postUser = async (req, res) => {
     });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
-      res.status(409).json({error: 'Username is already in use'});
+      error.status = 409;
+      error.message = 'Username is already in use';
+      next(error);
       return;
     }
-    res.status(500).json({error: 'Failed to add user'});
+    next(error);
   }
 };
 
-const putUser = async (req, res) => {
+const putUser = async (req, res, next) => {
   const currentUser = res.locals.user;
   const userId = Number(req.params.id);
 
   if (currentUser.role !== 'admin' && currentUser.user_id !== userId) {
-    res.sendStatus(403);
+    const error = new Error('Forbidden');
+    error.status = 403;
+    next(error);
     return;
   }
 
@@ -77,27 +76,35 @@ const putUser = async (req, res) => {
 
     const result = await modifyUser(updateData, userId);
     if (result === false) {
-      res.status(404).json({error: 'User not found'});
+      const error = new Error('User not found');
+      error.status = 404;
+      next(error);
     } else if (result === null) {
-      res.status(400).json({error: 'No valid user fields provided'});
+      const error = new Error('No valid user fields provided');
+      error.status = 400;
+      next(error);
     } else {
       res.status(200).json(result);
     }
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
-      res.status(409).json({error: 'Username is already in use'});
+      error.status = 409;
+      error.message = 'Username is already in use';
+      next(error);
       return;
     }
-    res.status(500).json({error: 'Failed to update user'});
+    next(error);
   }
 };
 
-const deleteUser = async (req, res) => {
+const deleteUser = async (req, res, next) => {
   const currentUser = res.locals.user;
   const userId = Number(req.params.id);
 
   if (currentUser.role !== 'admin' && currentUser.user_id !== userId) {
-    res.sendStatus(403);
+    const error = new Error('Forbidden');
+    error.status = 403;
+    next(error);
     return;
   }
 
@@ -106,10 +113,12 @@ const deleteUser = async (req, res) => {
     if (result) {
       res.status(200).json(result);
     } else {
-      res.status(404).json({error: 'User not found'});
+      const error = new Error('User not found');
+      error.status = 404;
+      next(error);
     }
-  } catch {
-    res.status(500).json({error: 'Failed to remove user'});
+  } catch (error) {
+    next(error);
   }
 };
 
